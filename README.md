@@ -6,7 +6,7 @@ generate a project that uses one.
 2. Download latest [Megadot](https://megadot.megacrit.com/) or [Godot](https://godotengine.org/download/windows/) (should still compatible for compilation)
 3. Download latest .pck and .dll of [BaseLib](https://github.com/Alchyr/BaseLib-StS2/releases) and copy to `Slay The Spire 2/mods`. You may have to create this folder.
 4. Download entire template project and load as a template in Rider (From step 7  here https://www.jetbrains.com/help/rider/Install_custom_project_templates.html#create-custom-project-template), 
-   or get template from NuGet with `dotnet new install Alchyr.Sts2.Templates@1.0.2`. The github project will likely be slightly more up-to-date.
+   or get template from NuGet with `dotnet new install Alchyr.Sts2.Templates@1.0.3`. The github project will likely be slightly more up-to-date.
 5. Create new solution using template. The format should be `.sln`.
    Make sure not to put any spaces in the project name, and enable `Put solution and project in same directory`.
    Expand "Advanced Settings" (in Rider) to adjust author and some other options.
