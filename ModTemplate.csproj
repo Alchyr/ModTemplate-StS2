@@ -4,7 +4,6 @@
     <ImplicitUsings>true</ImplicitUsings>
     <Nullable>enable</Nullable> <!--Makes code analysis regarding null values stricter.-->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <PublishDir>$(MSBuildProjectDirectory)\Publish</PublishDir>
     <GodotPath>C:\megadot\MegaDot_v4.5.1-stable_mono_win64.exe</GodotPath>
     <SteamLibraryPath>C:\Program Files (x86)\Steam\steamapps</SteamLibraryPath>
     <Sts2Path>$(SteamLibraryPath)\common\Slay the Spire 2</Sts2Path>
@@ -58,6 +57,6 @@
 
   <Target Name="GodotPublish" AfterTargets="Publish">
     <Message Text="Exporting Godot .pck to mods folder" Importance="high"/>
-    <Exec Command="$(GodotPath) --headless --export-pack &quot;Windows Desktop&quot; &quot;$(Sts2Path)\mods\$(MSBuildProjectName).pck&quot;" ContinueOnError="WarnAndContinue"/>
+    <Exec Command="&quot;$(GodotPath)&quot; --headless --export-pack &quot;Windows Desktop&quot; &quot;$(Sts2Path)\mods\$(MSBuildProjectName).pck&quot;" ContinueOnError="WarnAndContinue"/>
   </Target>
 </Project>
