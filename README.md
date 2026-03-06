@@ -2,7 +2,7 @@
 
 1. Install c# development IDE of your choice. Rider or Visual Studio are common options.
 
-2. Download latest [Megadot](https://megadot.megacrit.com/) or Godot of equivalent version (currently still compatible)
+2. Download latest [Megadot](https://megadot.megacrit.com/) or [Godot](https://godotengine.org/download/windows/) (should still compatible for compilation)
 3. Download latest .pck and .dll of [BaseLib](https://github.com/Alchyr/BaseLib-StS2/releases) and copy to `Slay The Spire 2/mods`. You may have to create this folder.
 4. Download entire template project and load as a template in Rider (From step 7 (here)[https://www.jetbrains.com/help/rider/Install_custom_project_templates.html#create-custom-project-template]), 
    or get template from NuGet with `dotnet new install Alchyr.Sts2.Templates@1.0.0`. The github project will likely be slightly more up-to-date.
