@@ -30,23 +30,19 @@
         "ModAuthor":{
             "type": "parameter",
             "dataType": "string",
-            "defaultValue": "Name",
             "isRequired": "true",
-            "replaces": "ModAuthor"
+            "replaces": "{ModAuthor}"
         },
         "PublicizeSts":{
             "type": "parameter",
             "dataType":"bool",
             "defaultValue": "false",
-            "replaces": "PublicizeSts",
+            "replaces": "{PublicizeSts}",
             "description": "If enabled, private and protected symbols in the Slay the Spire 2 .dll will be publicized."
         },
         "NullableChecks":{
             "type": "parameter",
             "dataType":"choice",
-            "defaultValue": "enable",
-            "replaces": "NullableChecks",
-            "enableQuotelessLiterals": true,
             "choices": [
                 {
                     "choice": "enable",
@@ -56,7 +52,9 @@
                     "choice": "disable",
                     "description": ""
                 }
-            ]
+            ],
+            "replaces": "{NullableChecks}",
+            "defaultValue": "enable"
         }
     }
 }

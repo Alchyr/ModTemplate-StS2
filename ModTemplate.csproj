@@ -2,7 +2,7 @@
     <PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>true</ImplicitUsings>
-        <Nullable>NullableChecks</Nullable> <!--Makes code analysis regarding null values stricter.-->
+        <Nullable>{NullableChecks}</Nullable> <!--Makes code analysis regarding null values stricter.-->
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <DefaultItemExcludes>packages\**</DefaultItemExcludes>
     </PropertyGroup>
@@ -33,6 +33,7 @@
         <SteamLibraryPath Condition="'$(SteamLibraryPath)' == ''">$(HOME)/.local/share/Steam/steamapps</SteamLibraryPath>
         <Sts2Path Condition="'$(Sts2Path)' == ''">$(SteamLibraryPath)/common/Slay the Spire 2</Sts2Path>
         <Sts2DataDir Condition="'$(Sts2DataDir)' == ''">$(Sts2Path)/data_sts2_linuxbsd_x86_64</Sts2DataDir>
+        <!-- Change the path here if using a downloaded binary instead of the Steam version-->
         <GodotPath Condition="'$(GodotPath)' == ''">$(SteamLibraryPath)/common/Godot Engine/godot.x11.opt.tools.64</GodotPath>
     </PropertyGroup>
     <!-- // NOTE: Megadot is version 4.5.1, and the game won't load pck if godot is newer. -->
@@ -52,7 +53,7 @@
         </Reference>
         <Reference Include="sts2">
             <HintPath>$(Sts2DataDir)/sts2.dll</HintPath>
-            <Publicize>PublicizeSts</Publicize> <!--Allows private/protected field references but may cause errors.-->
+            <Publicize>{PublicizeSts}</Publicize> <!--Allows private/protected field references but may cause errors.-->
         </Reference>
 
         <PackageReference Include="Alchyr.Sts2.BaseLib" Version="*" />
