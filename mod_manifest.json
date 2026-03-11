@@ -1,7 +1,7 @@
 {
   "pck_name": "ModTemplate",
   "name": "ModTemplate",
-  "author": "ModAuthor",
+  "author": "{ModAuthor}",
   "description": "Slay the Spire 2 mod created from a template for use with BaseLib",
   "version": "v0.0"
 }
