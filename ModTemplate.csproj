@@ -4,7 +4,7 @@
         <ImplicitUsings>true</ImplicitUsings>
         <Nullable>NullableChecks</Nullable> <!--Makes code analysis regarding null values stricter.-->
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <DefaultItemExcludes>packages\**</DefaultItemExcludes>
+        <DefaultItemExcludes>packages/**</DefaultItemExcludes>
     </PropertyGroup>
 
     <!-- OS Detection -->
@@ -57,25 +57,25 @@
 
         <PackageReference Include="Alchyr.Sts2.BaseLib" Version="*" />
         <PackageReference Include="Alchyr.Sts2.ModAnalyzers" Version="*" />
-        <AdditionalFiles Include="ModTemplate\localization\**\*.json"/>
+        <AdditionalFiles Include="ModTemplate/localization/**/*.json"/>
     </ItemGroup>
 
     <ItemGroup>
-        <Compile Remove="ModTemplate\**" />
-        <Compile Remove="materials\**" />
-        <Compile Remove="shaders\**" />
-        <Compile Remove="images\**" />
-        <EmbeddedResource Remove="ModTemplate\**" />
-        <EmbeddedResource Remove="materials\**" />
-        <EmbeddedResource Remove="shaders\**" />
-        <EmbeddedResource Remove="images\**" />
+        <Compile Remove="ModTemplate/**" />
+        <Compile Remove="materials/**" />
+        <Compile Remove="shaders/**" />
+        <Compile Remove="images/**" />
+        <EmbeddedResource Remove="ModTemplate/**" />
+        <EmbeddedResource Remove="materials/**" />
+        <EmbeddedResource Remove="shaders/**" />
+        <EmbeddedResource Remove="images/**" />
     </ItemGroup>
 
     <ItemGroup>
         <None Include=".gitignore" />
         <None Include="mod_manifest.json" />
         <None Include="project.godot"/>
-        <None Include="ModTemplate\**" />
+        <None Include="ModTemplate/**" />
     </ItemGroup>
 
     <ItemGroup>
@@ -92,7 +92,7 @@
         <ItemGroup>
             <BaseLibFiles Include="packages/alchyr.sts2.baselib/**/lib/**/BaseLib.dll;packages/alchyr.sts2.baselib/**/Content/BaseLib.pck"/>
         </ItemGroup>
-        <Copy SourceFiles="@(BaseLibFiles)" DestinationFolder="$(Sts2Path)\mods\" />
+        <Copy SourceFiles="@(BaseLibFiles)" DestinationFolder="$(Sts2Path)/mods/" />
     </Target>
 
     <Target Name="GodotPublish" AfterTargets="Publish" Condition="'$(GodotPath)' != '' and Exists('$(GodotPath)') and '$(IsInnerGodotExport)' != 'true'">

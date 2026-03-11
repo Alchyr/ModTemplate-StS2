@@ -8,6 +8,5 @@ publish/
 Properties/
 packages/
 .editorconfig
-*.import
-*.uid
+*cs.uid
 *.user
