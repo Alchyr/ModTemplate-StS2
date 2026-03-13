@@ -5,6 +5,8 @@
         <Nullable>{NullableChecks}</Nullable> <!--Makes code analysis regarding null values stricter.-->
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <DefaultItemExcludes>packages/**</DefaultItemExcludes>
+        <AppOutputBase>$(MSBuildProjectDirectory)\</AppOutputBase>
+        <PathMap>$(AppOutputBase)=.\</PathMap>
     </PropertyGroup>
 
     <!-- OS Detection -->
@@ -17,35 +19,51 @@
         <IsOSX Condition="$([MSBuild]::IsOSPlatform('OSX'))">true</IsOSX>
     </PropertyGroup>
 
+    <!-- // NOTE: Megadot is version 4.5.1, and the game won't load your .pck if the Godot version used is newer. -->
+
     <!-- Windows -->
     <PropertyGroup Condition="'$(IsWindows)' == 'true'">
         <AutoSteamPath>$(registry:HKEY_CURRENT_USER\Software\Valve\Steam@SteamPath)\steamapps</AutoSteamPath>
         <SteamLibraryPath Condition="'$(SteamLibraryPath)' == '' and Exists('$(AutoSteamPath)/common/Slay the Spire 2')">$(AutoSteamPath)</SteamLibraryPath>
+
+        <GodotPath Condition="'$(GodotPath)' == ''">C:/megadot/MegaDot_v4.5.1-stable_mono_win64.exe</GodotPath>
         <!-- If on Windows and Slay the Spire 2 is not installed in your default steam library, adjust the following.-->
         <SteamLibraryPath Condition="'$(SteamLibraryPath)' == ''">C:/Program Files (x86)/Steam/steamapps</SteamLibraryPath>
+
+        <!-- The below should not need to be changed. -->
         <Sts2Path Condition="'$(Sts2Path)' == ''">$(SteamLibraryPath)/common/Slay the Spire 2</Sts2Path>
+        <ModsPath Condition="'$(ModsPath)' == ''">$(Sts2Path)/mods/</ModsPath>
         <Sts2DataDir Condition="'$(Sts2DataDir)' == ''">$(Sts2Path)/data_sts2_windows_x86_64</Sts2DataDir>
-        <GodotPath Condition="'$(GodotPath)' == ''">C:/megadot/MegaDot_v4.5.1-stable_mono_win64.exe</GodotPath>
     </PropertyGroup>
 
     <!-- Linux -->
     <PropertyGroup Condition="'$(IsLinux)' == 'true'">
         <SteamLibraryPath Condition="'$(SteamLibraryPath)' == ''">$(HOME)/.local/share/Steam/steamapps</SteamLibraryPath>
-        <Sts2Path Condition="'$(Sts2Path)' == ''">$(SteamLibraryPath)/common/Slay the Spire 2</Sts2Path>
-        <Sts2DataDir Condition="'$(Sts2DataDir)' == ''">$(Sts2Path)/data_sts2_linuxbsd_x86_64</Sts2DataDir>
         <!-- Change the path here if using a downloaded binary instead of the Steam version-->
         <GodotPath Condition="'$(GodotPath)' == ''">$(SteamLibraryPath)/common/Godot Engine/godot.x11.opt.tools.64</GodotPath>
-    </PropertyGroup>
-    <!-- // NOTE: Megadot is version 4.5.1, and the game won't load pck if godot is newer. -->
 
-    <!-- macOS // TODO -->
+        <!-- The below should not need to be changed. -->
+        <Sts2Path Condition="'$(Sts2Path)' == ''">$(SteamLibraryPath)/common/Slay the Spire 2</Sts2Path>
+        <ModsPath Condition="'$(ModsPath)' == ''">$(Sts2Path)/mods/</ModsPath>
+        <Sts2DataDir Condition="'$(Sts2DataDir)' == ''">$(Sts2Path)/data_sts2_linuxbsd_x86_64</Sts2DataDir>
+    </PropertyGroup>
+
+    <!-- macOS -->
     <PropertyGroup Condition="'$(IsOSX)' == 'true'">
         <SteamLibraryPath Condition="'$(SteamLibraryPath)' == ''">$(HOME)/Library/Application Support/Steam/steamapps</SteamLibraryPath>
+        <GodotPath Condition="'$(GodotPath)' == ''">$(HOME)/Applications/Godot_mono.app/Contents/MacOS/Godot</GodotPath>
+
+        <!-- The below should not need to be changed. -->
         <Sts2Path Condition="'$(Sts2Path)' == ''">$(SteamLibraryPath)/common/Slay the Spire 2</Sts2Path>
-        <Sts2DataDir Condition="'$(Sts2DataDir)' == ''">$(Sts2Path)/data_sts2_macos_x86_64</Sts2DataDir>
-        <GodotPath Condition="'$(GodotPath)' == ''">$(HOME)/</GodotPath>
+        <ModsPath Condition="'$(ModsPath)' == ''">$(Sts2Path)/SlayTheSpire2.app/Contents/MacOS/mods/</ModsPath>
+        <Sts2DataDir Condition="'$(Sts2DataDir)' == ''">$(Sts2Path)/SlayTheSpire2.app/Contents/Resources/data_sts2_macos_x86_64</Sts2DataDir>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <!-- Diasble architecture mismatch warning; mods are ideally built for all platforms (MSIL)
+             while your local StS2 version will be for your specific platform. -->
+        <NoWarn>$(NoWarn);MSB3270</NoWarn> 
+    </PropertyGroup>
 
     <ItemGroup>
         <Reference Include="0Harmony">
@@ -76,7 +94,7 @@
 
     <ItemGroup>
         <None Include=".gitignore" />
-        <None Include="mod_manifest.json" />
+        <None Include="ModTemplate.json" />
         <None Include="project.godot"/>
         <None Include="ModTemplate/**" />
     </ItemGroup>
@@ -89,18 +107,19 @@
     </ItemGroup>
 
     <Target Name="CopyToModsFolderOnBuild" AfterTargets="PostBuildEvent">
-        <Message Text="Copying .dll to mods folder." Importance="high" />
-        <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(Sts2Path)/mods/$(MSBuildProjectName)/" />
+        <Message Text="Copying .dll and manifest to mods folder." Importance="high" />
+        <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ModsPath)$(MSBuildProjectName)/" />
+        <Copy SourceFiles="ModTemplate.json" DestinationFolder="$(ModsPath)$(MSBuildProjectName)/" />
         <Message Text="Copying BaseLib to mods folder." Importance="high" />
         <ItemGroup>
-            <BaseLibFiles Include="packages/alchyr.sts2.baselib/**/lib/**/BaseLib.dll;packages/alchyr.sts2.baselib/**/Content/BaseLib.pck"/>
+            <BaseLibFiles Include="packages/alchyr.sts2.baselib/**/lib/**/BaseLib.dll;packages/alchyr.sts2.baselib/**/Content/BaseLib.pck;packages/alchyr.sts2.baselib/**/Content/BaseLib.json;"/>
         </ItemGroup>
-        <Copy SourceFiles="@(BaseLibFiles)" DestinationFolder="$(Sts2Path)/mods/" />
+        <Copy SourceFiles="@(BaseLibFiles)" DestinationFolder="$(ModsPath)BaseLib/" />
     </Target>
 
     <Target Name="GodotPublish" AfterTargets="Publish" Condition="'$(GodotPath)' != '' and Exists('$(GodotPath)') and '$(IsInnerGodotExport)' != 'true'">
         <Message Text="Exporting Godot .pck to mods folder" Importance="high"/>
-        <Exec Command="&quot;$(GodotPath)&quot; --headless --export-pack &quot;BasicExport&quot; &quot;$(Sts2Path)/mods/$(MSBuildProjectName)/$(MSBuildProjectName).pck&quot;"
+        <Exec Command="&quot;$(GodotPath)&quot; --headless --export-pack &quot;BasicExport&quot; &quot;$(ModsPath)$(MSBuildProjectName)/$(MSBuildProjectName).pck&quot;"
               EnvironmentVariables="IsInnerGodotExport=true;MSBUILDDISABLENODEREUSE=1"
               ContinueOnError="WarnAndContinue"/>
     </Target>

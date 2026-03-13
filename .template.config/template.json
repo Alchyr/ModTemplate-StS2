@@ -1,7 +1,7 @@
 {
     "author": "Alchyr",
     "name": "Slay the Spire 2 Mod",
-    "description": "A Slay the Spire 2 mod relying on Basis",
+    "description": "A Slay the Spire 2 mod relying on BaseLib",
     "identity": "Alchyr.Sts2Mod",
     "shortName": "alchyrsts2mod",
     "tags": {
@@ -38,7 +38,7 @@
             "dataType":"bool",
             "defaultValue": "false",
             "replaces": "{PublicizeSts}",
-            "description": "If enabled, private and protected symbols in the Slay the Spire 2 .dll will be publicized."
+            "description": "If enabled, private and protected symbols in the Slay the Spire 2 .dll will be publicized.\nMay cause issues if inheriting from basegame Godot scripts."
         },
         "NullableChecks":{
             "type": "parameter",
