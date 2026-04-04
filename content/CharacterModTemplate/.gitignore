@@ -8,5 +8,4 @@ publish/
 Properties/
 packages/
 .editorconfig
-*cs.uid
 *.user
