@@ -11,18 +11,6 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <!-- Megadot current version is 4.5.1, and the game won't load your .pck if the Godot version used is newer. -->
-        <!-- MegaDot / Godot 4.5.1 mono executable used for export-pack -->
-        <GodotPath>C:/megadot/MegaDot_v4.5.1-stable_mono_win64.exe</GodotPath>
-
-        <!-- If sts2 is not found automatically, set this manually -->
-        <!-- <Sts2Path>Path/To/SteamLibrary/steamapps/common/Slay the Spire 2</Sts2Path> -->
-
-        <!-- Override managed data folder (default is OS-specific under Sts2Path) -->
-        <!-- <Sts2DataDir>$(Sts2Path)/data_sts2_windows_x86_64</Sts2DataDir> -->
-    </PropertyGroup>
-
-    <PropertyGroup>
         <!-- Diasble architecture mismatch warning; mods are ideally built for all platforms (MSIL)
              while your local StS2 version will be for your specific platform. -->
         <NoWarn>$(NoWarn);MSB3270</NoWarn>
@@ -39,7 +27,7 @@
         </Reference>
     </ItemGroup>
 
-    <ItemGroup Condition="{PublicizeSts}"> <!--Allows private/protected field references but may (unlikely to) cause errors.-->
+    <ItemGroup Condition="{PublicizeSts}"> <!--Allows access to originally private/protected members but may (unlikely to) cause errors.-->
         <Publicize Include="sts2" IncludeVirtualMembers="false" IncludeCompilerGeneratedMembers="false" />
     </ItemGroup>
 
@@ -63,6 +51,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <None Condition="Exists('Directory.Build.props')" Include="Directory.Build.props"/>
         <None Include=".gitignore" />
         <None Include="ContentMod.json" />
         <None Include="project.godot"/>
