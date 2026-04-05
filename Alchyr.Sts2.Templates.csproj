@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <PackageId>Alchyr.Sts2.Templates</PackageId>
-    <PackageVersion>2.2.4</PackageVersion>
+    <PackageVersion>2.3.0</PackageVersion>
     <Title>Sts2 Mod Templates</Title>
     <Authors>Alchyr</Authors>
     <Description>Templates to use when creating a Slay the Spire 2 mod</Description>
     <PackageTags>dotnet-new;templates;</PackageTags>
     <PackageProjectUrl>https://github.com/Alchyr/ModTemplate-StS2/</PackageProjectUrl>
-    <PackageReleaseNotes>remove baselib copying; too many issues</PackageReleaseNotes>
+    <PackageReleaseNotes>add quick packer, adjust csproj setup, remove unnecessary publicized card template</PackageReleaseNotes>
     
     <PackageType>Template</PackageType>
     <TargetFramework>net9.0</TargetFramework>

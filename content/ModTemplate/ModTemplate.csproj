@@ -1,4 +1,5 @@
 ﻿<Project Sdk="Godot.NET.Sdk/4.5.1" InitialTargets="CheckDependencyPaths">
+    <Import Project=".\Sts2PathDiscovery.props"/>
     <PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>true</ImplicitUsings>
@@ -9,53 +10,16 @@
         <PathMap>$(AppOutputBase)=.\</PathMap>
     </PropertyGroup>
 
-    <!-- OS Detection -->
     <PropertyGroup>
-        <IsWindows>false</IsWindows>
-        <IsLinux>false</IsLinux>
-        <IsOSX>false</IsOSX>
-        <IsWindows Condition="$([MSBuild]::IsOSPlatform('Windows'))">true</IsWindows>
-        <IsLinux Condition="$([MSBuild]::IsOSPlatform('Linux'))">true</IsLinux>
-        <IsOSX Condition="$([MSBuild]::IsOSPlatform('OSX'))">true</IsOSX>
-    </PropertyGroup>
-
-    <!-- // NOTE: Megadot is version 4.5.1, and the game won't load your .pck if the Godot version used is newer. -->
-
-    <!-- Windows -->
-    <PropertyGroup Condition="'$(IsWindows)' == 'true'">
-        <AutoSteamPath>$(registry:HKEY_CURRENT_USER\Software\Valve\Steam@SteamPath)\steamapps</AutoSteamPath>
-        <SteamLibraryPath Condition="Exists('$(AutoSteamPath)/common/Slay the Spire 2')">$(AutoSteamPath)</SteamLibraryPath>
-
+        <!-- Megadot current version is 4.5.1, and the game won't load your .pck if the Godot version used is newer. -->
+        <!-- MegaDot / Godot 4.5.1 mono executable used for export-pack -->
         <GodotPath>C:/megadot/MegaDot_v4.5.1-stable_mono_win64.exe</GodotPath>
-        <!-- If on Windows and Slay the Spire 2 is not installed in your default steam library, adjust the following.-->
-        <SteamLibraryPath Condition="'$(SteamLibraryPath)' == ''">C:/Program Files (x86)/Steam/steamapps</SteamLibraryPath>
 
-        <!-- The below should not need to be changed. -->
-        <Sts2Path>$(SteamLibraryPath)/common/Slay the Spire 2</Sts2Path>
-        <ModsPath>$(Sts2Path)/mods/</ModsPath>
-        <Sts2DataDir>$(Sts2Path)/data_sts2_windows_x86_64</Sts2DataDir>
-    </PropertyGroup>
-
-    <!-- Linux -->
-    <PropertyGroup Condition="'$(IsLinux)' == 'true'">
-        <SteamLibraryPath Condition="'$(SteamLibraryPath)' == ''">$(HOME)/.local/share/Steam/steamapps</SteamLibraryPath>
-        <GodotPath Condition="'$(GodotPath)' == ''">$(SteamLibraryPath)/common/Godot Engine/godot.x11.opt.tools.64</GodotPath>
-
-        <!-- The below should not need to be changed. -->
-        <Sts2Path>$(SteamLibraryPath)/common/Slay the Spire 2</Sts2Path>
-        <ModsPath>$(Sts2Path)/mods/</ModsPath>
-        <Sts2DataDir>$(Sts2Path)/data_sts2_linuxbsd_x86_64</Sts2DataDir>
-    </PropertyGroup>
-
-    <!-- macOS -->
-    <PropertyGroup Condition="'$(IsOSX)' == 'true'">
-        <SteamLibraryPath Condition="'$(SteamLibraryPath)' == ''">$(HOME)/Library/Application Support/Steam/steamapps</SteamLibraryPath>
-        <GodotPath Condition="'$(GodotPath)' == ''">$(HOME)/Applications/Godot_mono.app/Contents/MacOS/Godot</GodotPath>
-
-        <!-- The below should not need to be changed. -->
-        <Sts2Path>$(SteamLibraryPath)/common/Slay the Spire 2</Sts2Path>
-        <ModsPath>$(Sts2Path)/SlayTheSpire2.app/Contents/MacOS/mods/</ModsPath>
-        <Sts2DataDir>$(Sts2Path)/SlayTheSpire2.app/Contents/Resources/data_sts2_macos_x86_64</Sts2DataDir>
+        <!-- If sts2 is not found automatically, set this manually -->
+        <!-- <Sts2Path>Path/To/SteamLibrary/steamapps/common/Slay the Spire 2</Sts2Path> -->
+        
+        <!-- Override managed data folder (default is OS-specific under Sts2Path) -->
+        <!-- <Sts2DataDir>$(Sts2Path)/data_sts2_windows_x86_64</Sts2DataDir> -->
     </PropertyGroup>
 
     <PropertyGroup>
@@ -75,7 +39,7 @@
         </Reference>
     </ItemGroup>
     
-    <ItemGroup Condition="{PublicizeSts}"> <!--Allows private/protected field references but may cause errors.-->
+    <ItemGroup Condition="{PublicizeSts}"> <!--Allows private/protected field references but may (unlikely to) cause errors.-->
         <Publicize Include="sts2" IncludeVirtualMembers="false" IncludeCompilerGeneratedMembers="false" />
     </ItemGroup>
 
@@ -83,6 +47,7 @@
         <PackageReference Include="Alchyr.Sts2.BaseLib" Version="*" PrivateAssets="All" />
         <PackageReference Include="Krafs.Publicizer" Version="2.3.0" PrivateAssets="All"/>
         <PackageReference Include="Alchyr.Sts2.ModAnalyzers" Version="*" />
+        <PackageReference Include="BSchneppe.StS2.PckPacker" Version="0.1.1" PrivateAssets="All" />
         <AdditionalFiles Include="ModTemplate/localization/**/*.json"/> <!-- Used by analyzer -->
     </ItemGroup>
 
@@ -116,7 +81,13 @@
     <Target Name="CopyToModsFolderOnBuild" AfterTargets="PostBuildEvent">
         <Message Text="Copying .dll and manifest to mods folder." Importance="high" />
         <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ModsPath)$(MSBuildProjectName)/" />
-        <Copy SourceFiles="ModTemplate.json" DestinationFolder="$(ModsPath)$(MSBuildProjectName)/" />
+        <Copy SourceFiles="$(AssemblyName).json" DestinationFolder="$(ModsPath)$(MSBuildProjectName)/" />
+    </Target>
+
+    <Target Name="CopyQuickPck" AfterTargets="PackPck" Condition="Exists('$(PckPackerOutputPath)') And '$(PckPackerSkipped)' != 'true'">
+        <Message Text="Copying quick .pck to mods folder." Importance="high"/>
+        <Copy SourceFiles="$(PckPackerOutputPath)"
+              DestinationFolder="$(ModsPath)/$(MSBuildProjectName)" />
     </Target>
 
     <Target Name="GodotPublish" AfterTargets="Publish" Condition="'$(GodotPath)' != '' and Exists('$(GodotPath)') and '$(IsInnerGodotExport)' != 'true'">
