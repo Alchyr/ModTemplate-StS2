@@ -44,10 +44,14 @@ public class CharMod : PlaceholderCharacterModel
         override all the other methods that define those assets. 
         These are just some of the simplest assets, given some placeholders to differentiate your character with. 
         You don't have to, but you're suggested to rename these images. */
-    public override Control CustomIcon => { 
-        var icon = NodeFactory<Control>.CreateFromResource(CustomIconTexturePath);
-        icon.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
-        return icon;
+    public override Control CustomIcon
+    {
+        get
+        {
+            var icon = NodeFactory<Control>.CreateFromResource(CustomIconTexturePath);
+            icon.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+            return icon;
+        }
     }
     public override string CustomIconTexturePath => "character_icon_char_name.png".CharacterUiPath();
     public override string CustomCharacterSelectIconPath => "char_select_char_name.png".CharacterUiPath();
