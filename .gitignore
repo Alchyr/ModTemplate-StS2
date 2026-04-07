@@ -3,3 +3,4 @@ dotnet pack in this folder
 .vs/
 bin/
 obj/
+/Folder.DotSettings.user
