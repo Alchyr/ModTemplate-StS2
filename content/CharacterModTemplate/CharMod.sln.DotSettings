@@ -77,7 +77,6 @@ public class $CLASS$() : CharMod.CharModCode.Cards.CharModCard($COST$, MegaCrit.
 	<s:Boolean x:Key="/Default/PatternsAndTemplates/LiveTemplates/Template/=B4D0CA86CBDACD42AD544A77CAE9FDEC/ShortenQualifiedReferences/@EntryValue">True</s:Boolean>
 	<s:String x:Key="/Default/PatternsAndTemplates/LiveTemplates/Template/=B4D0CA86CBDACD42AD544A77CAE9FDEC/Text/@EntryValue">namespace $NAMESPACE$;
 
-[BaseLib.Utils.Pool(typeof($POOL$))]
 public class $CLASS$() : CharMod.CharModCode.Relics.CharModRelic {
     public override MegaCrit.Sts2.Core.Entities.Relics.RelicRarity Rarity =&gt; MegaCrit.Sts2.Core.Entities.Relics.RelicRarity.$RARITY$;
     
