@@ -84,7 +84,7 @@
     </Target>
     
     <ItemGroup>
-        <GodotResourceFiles Include="CharMod/**"/>
+        <GodotResourceFiles Include="ModTemplate/**"/>
     </ItemGroup>
 
     <Target Name="GodotPublish" AfterTargets="Publish" Condition="'$(GodotPath)' != '' and Exists('$(GodotPath)') and '$(IsInnerGodotExport)' != 'true'" Inputs="@(GodotResourceFiles)" Outputs="$(ModsPath)$(MSBuildProjectName)/$(MSBuildProjectName).pck">
