@@ -1,7 +1,6 @@
 ﻿using BaseLib.Abstracts;
 using BaseLib.Extensions;
 using ContentMod.ContentModCode.Extensions;
-using Godot;
 
 namespace ContentMod.ContentModCode.Relics;
 
