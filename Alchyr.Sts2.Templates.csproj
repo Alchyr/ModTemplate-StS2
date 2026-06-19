@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <PackageId>Alchyr.Sts2.Templates</PackageId>
-    <PackageVersion>2.4.3</PackageVersion>
+    <PackageVersion>2.5.0</PackageVersion>
     <Title>Sts2 Mod Templates</Title>
     <Authors>Alchyr</Authors>
     <Description>Templates to use when creating a Slay the Spire 2 mod</Description>
     <PackageTags>dotnet-new;templates;</PackageTags>
     <PackageProjectUrl>https://github.com/Alchyr/ModTemplate-StS2/</PackageProjectUrl>
-    <PackageReleaseNotes>Add commented out Godot script bridge lookup</PackageReleaseNotes>
+    <PackageReleaseNotes>Adjust mod manifest and csproj setup to include baselib dependency version</PackageReleaseNotes>
     
     <PackageType>Template</PackageType>
     <TargetFramework>net9.0</TargetFramework>

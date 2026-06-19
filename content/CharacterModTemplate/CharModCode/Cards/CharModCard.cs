@@ -7,6 +7,12 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 
 namespace CharMod.CharModCode.Cards;
 
+/// <summary>
+/// This is the base class for your mod's cards, which is set up to load the card's images from your mod's resources.
+/// When creating a card, right click the Cards folder and create a new file with the Custom Card template.
+/// This will generate a class that extends this one.
+/// You can also just create the class manually; just make sure to inherit from this class.
+/// </summary>
 [Pool(typeof(CharModCardPool))]
 public abstract class CharModCard(int cost, CardType type, CardRarity rarity, TargetType target) :
     CustomCardModel(cost, type, rarity, target)
