@@ -22,18 +22,30 @@ static class RunStartPatch
     }
 }
 
-// Run ends when the player returns to the main menu (covers both death and victory).
-// LaunchMainMenu is internal in sts2.dll so we resolve it by name at runtime.
-[HarmonyPatch("MegaCrit.Sts2.Core.Nodes.NGame", "LaunchMainMenu")]
-static class RunEndPatch
+// Run continues when the player resumes an existing run from the main menu.
+[HarmonyPatch("MegaCrit.Sts2.Core.Nodes.NGame", "LoadRun")]
+static class RunContinuePatch
 {
-    [HarmonyPrefix]
-    static void Prefix()
+    [HarmonyPostfix]
+    static void Postfix()
     {
-        try { SnapshotManager.OnRunEnd(); SnapshotUi.Teardown(); }
-        catch (Exception ex) { MainFile.Logger.Info($"[Snapshot] RunEnd error: {ex.Message}"); }
+        try { SnapshotManager.OnRunContinue(); }
+        catch (Exception ex) { MainFile.Logger.Info($"[Snapshot] RunContinue error: {ex.Message}"); }
     }
 }
+
+// Run ends when the player returns to the main menu (covers both death and victory).
+// LaunchMainMenu is internal in sts2.dll so we resolve it by name at runtime.
+// [HarmonyPatch("MegaCrit.Sts2.Core.Nodes.NGame", "LaunchMainMenu")]
+// static class RunEndPatch
+// {
+//     [HarmonyPrefix]
+//     static void Prefix()
+//     {
+//         try { SnapshotManager.OnRunEnd(); SnapshotUi.Teardown(); }
+//         catch (Exception ex) { MainFile.Logger.Info($"[Snapshot] RunEnd error: {ex.Message}"); }
+//     }
+// }
 
 // Auto-save a snapshot at the start of every floor.
 // Hook.BeforeRoomEntered is the game's canonical hook point fired before any room logic runs.

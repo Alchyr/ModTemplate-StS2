@@ -10,22 +10,32 @@ public static class SnapshotManager
     // without SnapshotManager needing to know about NGame directly.
     public static Action? LaunchMainMenuAction { get; set; }
 
-    private static string? _runId;
     private static string? _gameSaveDir;
 
     private static string SnapshotRoot => Path.Combine(OS.GetUserDataDir(), "mod_snapshots");
-    private static string RunDir       => Path.Combine(SnapshotRoot, _runId ?? "active");
+    private static string ActiveDir    => Path.Combine(SnapshotRoot, "active");
 
     // ── Run lifecycle ─────────────────────────────────────────────────────────
 
     public static void OnRunStart()
     {
-        _runId        = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss") + "_" + Guid.NewGuid().ToString("N")[..6];
+        if (Directory.Exists(ActiveDir))
+            Directory.Delete(ActiveDir, recursive: true);
+        Directory.CreateDirectory(ActiveDir);
         _gameSaveDir  = FindGameSaveDir();
         SnapshotCount = 0;
         IsRestoring   = false;
-        Directory.CreateDirectory(RunDir);
-        MainFile.Logger.Info($"[Snapshot] Run started: {_runId} | saves: {_gameSaveDir ?? "NOT FOUND"}");
+        MainFile.Logger.Info($"[Snapshot] New run started | saves: {_gameSaveDir ?? "NOT FOUND"}");
+    }
+
+    public static void OnRunContinue()
+    {
+        _gameSaveDir  = FindGameSaveDir();
+        SnapshotCount = Directory.Exists(ActiveDir)
+            ? Directory.GetDirectories(ActiveDir).Count(d => Path.GetFileName(d).StartsWith("floor_"))
+            : 0;
+        IsRestoring   = false;
+        MainFile.Logger.Info($"[Snapshot] Continued run | {SnapshotCount} snapshot(s) | saves: {_gameSaveDir ?? "NOT FOUND"}");
     }
 
     public static void OnRunEnd()
@@ -37,12 +47,11 @@ public static class SnapshotManager
             MainFile.Logger.Info("[Snapshot] RunEnd skipped deletion (restore in progress).");
             return;
         }
-        if (Directory.Exists(RunDir))
+        if (Directory.Exists(ActiveDir))
         {
-            Directory.Delete(RunDir, recursive: true);
-            MainFile.Logger.Info($"[Snapshot] Deleted snapshots for run {_runId}.");
+            Directory.Delete(ActiveDir, recursive: true);
+            MainFile.Logger.Info("[Snapshot] Cleared mod_snapshots.");
         }
-        _runId        = null;
         _gameSaveDir  = null;
         SnapshotCount = 0;
     }
@@ -57,23 +66,23 @@ public static class SnapshotManager
             MainFile.Logger.Info("[Snapshot] Save skipped: game save dir not found.");
             return;
         }
-        if (_runId is null) OnRunStart();
 
-        var snapshotDir = Path.Combine(RunDir, $"floor_{floor:D2}");
+        var snapshotDir = Path.Combine(ActiveDir, $"floor_{floor:D2}");
+        bool isNew = !Directory.Exists(snapshotDir);
         Directory.CreateDirectory(snapshotDir);
 
         CopyIfExists(Path.Combine(_gameSaveDir, "current_run.save"), snapshotDir);
 
-        SnapshotCount++;
-        MainFile.Logger.Info($"[Snapshot] Saved floor {floor}.");
+        if (isNew) SnapshotCount++;
+        MainFile.Logger.Info($"[Snapshot] {(isNew ? "Saved" : "Overwrote")} floor {floor}.");
     }
 
     // ── Load ──────────────────────────────────────────────────────────────────
 
     public static List<RunSnapshot> LoadAll()
     {
-        if (!Directory.Exists(RunDir)) return [];
-        return [.. Directory.GetDirectories(RunDir)
+        if (!Directory.Exists(ActiveDir)) return [];
+        return [.. Directory.GetDirectories(ActiveDir)
             .Select(d =>
             {
                 var name = Path.GetFileName(d);
