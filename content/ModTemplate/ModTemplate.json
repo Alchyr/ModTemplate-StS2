@@ -1,4 +1,4 @@
-{
+﻿{
   "id": "ModTemplate",
   "name": "ModTemplate",
   "author": "{ModAuthor}",
@@ -8,7 +8,7 @@
   "has_pck": true,
   "has_dll": true,
   "dependencies": [
-    {"id": "BaseLib", "min_version": "3.3.0"}
+    {"id": "BaseLib", "min_version": "3.3.1"}
   ],
   "affects_gameplay": true
 }

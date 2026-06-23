@@ -3,7 +3,7 @@
     <PropertyGroup>
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>true</ImplicitUsings>
-        <Nullable>{NullableChecks}</Nullable> <!--Makes code analysis regarding null values stricter.-->
+        <Nullable>enable</Nullable> <!--Makes code analysis regarding null values stricter.-->
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         
         <AppOutputBase>$(MSBuildProjectDirectory)\</AppOutputBase>
@@ -28,7 +28,7 @@
         </Reference>
     </ItemGroup>
     
-    <ItemGroup Condition="{PublicizeSts}"> <!--Allows access to originally private/protected members but may (unlikely to) cause errors.-->
+    <ItemGroup Condition="false"> <!--Allows access to originally private/protected members but may (unlikely to) cause errors.-->
         <Publicize Include="sts2" IncludeVirtualMembers="false" IncludeCompilerGeneratedMembers="false" />
     </ItemGroup>
 
