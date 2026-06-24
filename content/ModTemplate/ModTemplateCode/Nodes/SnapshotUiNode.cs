@@ -190,11 +190,11 @@ internal static class SnapshotUi
             row.AddChild(new Label { Text = snap.SavedAt.ToLocalTime().ToString("HH:mm:ss"),   CustomMinimumSize = new Vector2(180, 0) });
             row.AddChild(new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill });
 
-            var btn = new Button { Text = "Restore" };
+            var btn = new Button { Text = "Load Snapshot" };
             var captured = snap;
             btn.Pressed += () =>
             {
-                SnapshotManager.Restore(captured);
+                SnapshotManager.LoadSnapshot(captured);
                 if (_panel != null) _panel.Visible = false;
             };
             row.AddChild(btn);

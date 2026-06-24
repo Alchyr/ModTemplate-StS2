@@ -1,16 +1,17 @@
 using Godot;
+using HarmonyLib;
+using MegaCrit.Sts2.Core.Nodes;
+using MegaCrit.Sts2.Core.Runs;
+using MegaCrit.Sts2.Core.Saves;
 
 namespace ModTemplate.ModTemplateCode.Snapshots;
 
 public static class SnapshotManager
 {
-    public static int    SnapshotCount       { get; private set; }
-    public static bool   IsRestoring         { get; set; }
-    // Set by NRunReadyPatch so Restore can trigger a scene transition
-    // without SnapshotManager needing to know about NGame directly.
-    public static Action? LaunchMainMenuAction { get; set; }
+    public static int SnapshotCount => _snapshots.Count;
 
-    private static string? _gameSaveDir;
+    // Floor → (complete run state at that floor, time it was captured)
+    private static readonly Dictionary<int, (SerializableRun RunSave, DateTime SavedAt)> _snapshots = new();
 
     private static string SnapshotRoot => Path.Combine(OS.GetUserDataDir(), "mod_snapshots");
     private static string ActiveDir    => Path.Combine(SnapshotRoot, "active");
@@ -19,126 +20,173 @@ public static class SnapshotManager
 
     public static void OnRunStart()
     {
+        _snapshots.Clear();
         if (Directory.Exists(ActiveDir))
             Directory.Delete(ActiveDir, recursive: true);
         Directory.CreateDirectory(ActiveDir);
-        _gameSaveDir  = FindGameSaveDir();
-        SnapshotCount = 0;
-        IsRestoring   = false;
-        MainFile.Logger.Info($"[Snapshot] New run started | saves: {_gameSaveDir ?? "NOT FOUND"}");
+        MainFile.Logger.Info("[Snapshot] New run started.");
     }
 
     public static void OnRunContinue()
     {
-        _gameSaveDir  = FindGameSaveDir();
-        SnapshotCount = Directory.Exists(ActiveDir)
-            ? Directory.GetDirectories(ActiveDir).Count(d => Path.GetFileName(d).StartsWith("floor_"))
-            : 0;
-        IsRestoring   = false;
-        MainFile.Logger.Info($"[Snapshot] Continued run | {SnapshotCount} snapshot(s) | saves: {_gameSaveDir ?? "NOT FOUND"}");
+        _snapshots.Clear();
+        if (Directory.Exists(ActiveDir))
+        {
+            foreach (var dir in Directory.GetDirectories(ActiveDir))
+            {
+                var name = Path.GetFileName(dir);
+                if (!name.StartsWith("floor_") || !int.TryParse(name[6..], out var floor)) continue;
+
+                var snapshotFile = Path.Combine(dir, "snapshot.json");
+                var metaFile     = Path.Combine(dir, "meta.json");
+                if (!File.Exists(snapshotFile)) continue;
+
+                try
+                {
+                    var result = JsonSerializationUtility.FromJson<SerializableRun>(
+                        File.ReadAllText(snapshotFile));
+                    if (!result.Success || result.SaveData == null) continue;
+                    var runSave = result.SaveData;
+
+                    var savedAt = File.Exists(metaFile)
+                        ? DateTime.Parse(File.ReadAllText(metaFile), null, System.Globalization.DateTimeStyles.RoundtripKind)
+                        : Directory.GetCreationTimeUtc(dir);
+
+                    _snapshots[floor] = (runSave, savedAt);
+                    MainFile.Logger.Info($"[Snapshot] Restored floor {floor} from disk.");
+                }
+                catch (Exception ex)
+                {
+                    MainFile.Logger.Info($"[Snapshot] Could not restore floor {floor}: {ex.Message}");
+                }
+            }
+        }
+        MainFile.Logger.Info($"[Snapshot] Continued run | {_snapshots.Count} snapshot(s).");
     }
 
     public static void OnRunEnd()
     {
-        if (IsRestoring)
-        {
-            // Player triggered a restore — keep snapshots so they survive the
-            // trip through the main menu back into the restored run.
-            MainFile.Logger.Info("[Snapshot] RunEnd skipped deletion (restore in progress).");
-            return;
-        }
+        _snapshots.Clear();
         if (Directory.Exists(ActiveDir))
         {
             Directory.Delete(ActiveDir, recursive: true);
-            MainFile.Logger.Info("[Snapshot] Cleared mod_snapshots.");
+            MainFile.Logger.Info("[Snapshot] Run ended, snapshots cleared.");
         }
-        _gameSaveDir  = null;
-        SnapshotCount = 0;
     }
 
     // ── Save ──────────────────────────────────────────────────────────────────
 
     public static void Save(int floor)
     {
-        if (_gameSaveDir is null) _gameSaveDir = FindGameSaveDir();
-        if (_gameSaveDir is null)
-        {
-            MainFile.Logger.Info("[Snapshot] Save skipped: game save dir not found.");
-            return;
-        }
-
-        var snapshotDir = Path.Combine(ActiveDir, $"floor_{floor:D2}");
-        bool isNew = !Directory.Exists(snapshotDir);
-        Directory.CreateDirectory(snapshotDir);
-
-        CopyIfExists(Path.Combine(_gameSaveDir, "current_run.save"), snapshotDir);
-
-        if (isNew) SnapshotCount++;
-        MainFile.Logger.Info($"[Snapshot] {(isNew ? "Saved" : "Overwrote")} floor {floor}.");
+        _ = SaveAsync(floor);
     }
 
-    // ── Load ──────────────────────────────────────────────────────────────────
-
-    public static List<RunSnapshot> LoadAll()
-    {
-        if (!Directory.Exists(ActiveDir)) return [];
-        return [.. Directory.GetDirectories(ActiveDir)
-            .Select(d =>
-            {
-                var name = Path.GetFileName(d);
-                if (!name.StartsWith("floor_") || !int.TryParse(name[6..], out var f)) return null;
-                return new RunSnapshot { Floor = f, SavedAt = Directory.GetCreationTimeUtc(d), Dir = d };
-            })
-            .OfType<RunSnapshot>()
-            .OrderByDescending(s => s.Floor)];
-    }
-
-    // ── Restore ───────────────────────────────────────────────────────────────
-
-    public static void Restore(RunSnapshot snapshot)
-    {
-        if (_gameSaveDir is null) _gameSaveDir = FindGameSaveDir();
-        if (_gameSaveDir is null)
-        {
-            MainFile.Logger.Info("[Snapshot] Restore failed: game save dir not found.");
-            return;
-        }
-        if (!Directory.Exists(snapshot.Dir))
-        {
-            MainFile.Logger.Info($"[Snapshot] Restore failed: snapshot dir missing ({snapshot.Dir}).");
-            return;
-        }
-
-        // Only restore the run save — progress.save holds account-wide stats/unlocks
-        // that must not be rolled back when rewinding a floor.
-        CopyIfExists(Path.Combine(snapshot.Dir, "current_run.save"), _gameSaveDir);
-
-        IsRestoring = true;
-        MainFile.Logger.Info($"[Snapshot] Restored floor {snapshot.Floor} — launching main menu.");
-        LaunchMainMenuAction?.Invoke();
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private static string? FindGameSaveDir()
+    private static async Task SaveAsync(int floor)
     {
         try
         {
-            var files = Directory.GetFiles(OS.GetUserDataDir(), "current_run.save",
-                                           SearchOption.AllDirectories);
-            var found = files.FirstOrDefault();
-            return found is not null ? Path.GetDirectoryName(found) : null;
+            var saveManager = SaveManager.Instance;
+
+            // Wait for any in-flight save so we read the final committed state.
+            var pending = saveManager.CurrentRunSaveTask;
+            if (pending != null) await pending;
+
+            var readResult = saveManager.LoadRunSave();
+            if (!readResult.Success || readResult.SaveData == null)
+            {
+                MainFile.Logger.Info($"[Snapshot] Save floor {floor}: LoadRunSave failed (status={readResult.Status}).");
+                return;
+            }
+
+            var runSave = readResult.SaveData;
+            bool isNew  = !_snapshots.ContainsKey(floor);
+            var savedAt = DateTime.UtcNow;
+            _snapshots[floor] = (runSave, savedAt);
+
+            // Persist to disk so snapshots survive game restarts.
+            var dir = Path.Combine(ActiveDir, $"floor_{floor:D2}");
+            Directory.CreateDirectory(dir);
+            File.WriteAllText(Path.Combine(dir, "snapshot.json"),
+                JsonSerializationUtility.ToJson(runSave));
+            File.WriteAllText(Path.Combine(dir, "meta.json"),
+                savedAt.ToString("O")); // ISO 8601 round-trip format
+
+            MainFile.Logger.Info($"[Snapshot] {(isNew ? "Saved" : "Overwrote")} floor {floor} ({_snapshots.Count} total).");
         }
         catch (Exception ex)
         {
-            MainFile.Logger.Info($"[Snapshot] FindGameSaveDir error: {ex.Message}");
-            return null;
+            MainFile.Logger.Info($"[Snapshot] SaveAsync error: {ex}");
         }
     }
 
-    private static void CopyIfExists(string src, string destDir)
+    // ── Enumerate ─────────────────────────────────────────────────────────────
+
+    public static List<RunSnapshot> LoadAll() =>
+        [.. _snapshots
+            .Select(kvp => new RunSnapshot { Floor = kvp.Key, SavedAt = kvp.Value.SavedAt })
+            .OrderByDescending(s => s.Floor)];
+
+    // ── Load ──────────────────────────────────────────────────────────────────
+
+    public static void LoadSnapshot(RunSnapshot snapshot)
     {
-        if (!File.Exists(src)) return;
-        File.Copy(src, Path.Combine(destDir, Path.GetFileName(src)), overwrite: true);
+        if (!_snapshots.TryGetValue(snapshot.Floor, out var entry))
+        {
+            MainFile.Logger.Info($"[Snapshot] Load floor {snapshot.Floor}: not found in memory.");
+            return;
+        }
+        MainFile.Logger.Info($"[Snapshot] Starting load for floor {snapshot.Floor}.");
+        _ = LoadSnapshotAsync(snapshot.Floor, entry.RunSave);
+    }
+
+    private static async Task LoadSnapshotAsync(int floor, SerializableRun runSave)
+    {
+        try
+        {
+            var game        = NGame.Instance;
+            var saveManager = SaveManager.Instance;
+            var runManager  = RunManager.Instance;
+
+            // Wait for any pending save so we don't race against an in-flight write.
+            var pending = saveManager.CurrentRunSaveTask;
+            if (pending != null)
+            {
+                MainFile.Logger.Info("[Snapshot] LoadAsync: waiting for pending save...");
+                await pending;
+            }
+
+            runManager.ActionExecutor.Cancel();
+            runManager.ActionQueueSet.Reset();
+
+            // Reconstruct run state directly from the captured object — no file I/O needed.
+            RunState runState = RunState.FromSerializable(runSave);
+
+            await game.Transition.FadeOut();
+
+            runManager.CleanUp();
+
+            // Method name changed capitalisation between game versions.
+            var setupMethod =
+                AccessTools.Method(typeof(RunManager), "SetUpSavedSingleplayer", [typeof(RunState), typeof(SerializableRun)]) ??
+                AccessTools.Method(typeof(RunManager), "SetUpSavedSinglePlayer", [typeof(RunState), typeof(SerializableRun)]);
+            if (setupMethod != null)
+            {
+                var result = setupMethod.Invoke(runManager, [runState, runSave]);
+                if (result is Task t) await t;
+            }
+            else
+            {
+                MainFile.Logger.Info("[Snapshot] LoadAsync: SetUpSavedSingleplayer not found.");
+            }
+
+            await game.LoadRun(runState, runSave.PreFinishedRoom);
+            await game.Transition.FadeIn();
+
+            MainFile.Logger.Info($"[Snapshot] Load complete for floor {floor}.");
+        }
+        catch (Exception ex)
+        {
+            MainFile.Logger.Info($"[Snapshot] LoadAsync error: {ex}");
+        }
     }
 }
