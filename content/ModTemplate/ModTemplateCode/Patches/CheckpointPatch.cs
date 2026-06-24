@@ -1,40 +1,45 @@
-using Godot;
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Nodes;
-using ModTemplate.ModTemplateCode.Nodes;
+using MegaCrit.Sts2.Core.Rooms;
+using MegaCrit.Sts2.Core.Runs;
+using ModTemplate.ModTemplateCode.Checkpoints;
 
 namespace ModTemplate.ModTemplateCode.Patches;
 
-internal static class CheckpointPatch
+// Run starts when a new singleplayer run is initiated.
+[HarmonyPatch(typeof(NGame), nameof(NGame.StartNewSingleplayerRun))]
+static class RunStartPatch
 {
-    // ── Add UI when a run scene loads ─────────────────────────────────────────
-
-    [HarmonyPatch(typeof(NRun), "_Ready")]
-    static class NRunReadyPatch
+    [HarmonyPostfix]
+    static void Postfix()
     {
-        [HarmonyPostfix]
-        static void Postfix(NRun __instance)
-        {
-            try
-            {
-                var sceneRoot = __instance.GetTree()?.Root;
-                if (sceneRoot != null)
-                    CheckpointUi.Initialize(sceneRoot);
-            }
-            catch (Exception ex) { MainFile.Logger.Info($"[Checkpoint] NRunReady error: {ex}"); }
-        }
+        try { CheckpointManager.OnRunStart(); }
+        catch (Exception ex) { MainFile.Logger.Info($"[Checkpoint] RunStart error: {ex.Message}"); }
     }
+}
 
-    // ── Drive UI every frame ──────────────────────────────────────────────────
-
-    [HarmonyPatch(typeof(NRun), "_Process")]
-    static class NRunProcessPatch
+// Run continues when the player resumes an existing run from the main menu.
+[HarmonyPatch("MegaCrit.Sts2.Core.Nodes.NGame", "LoadRun")]
+static class RunContinuePatch
+{
+    [HarmonyPostfix]
+    static void Postfix()
     {
-        [HarmonyPostfix]
-        static void Postfix(double delta)
-        {
-            try { CheckpointUi.Update(delta); }
-            catch (Exception ex) { MainFile.Logger.Info($"[Checkpoint] UI error: {ex.Message}"); }
-        }
+        try { CheckpointManager.OnRunContinue(); }
+        catch (Exception ex) { MainFile.Logger.Info($"[Checkpoint] RunContinue error: {ex.Message}"); }
+    }
+}
+
+// Auto-save a checkpoint at the start of every floor.
+// Hook.BeforeRoomEntered is the game's canonical hook point fired before any room logic runs.
+[HarmonyPatch(typeof(Hook), nameof(Hook.BeforeRoomEntered))]
+static class FloorCheckpointPatch
+{
+    [HarmonyPostfix]
+    static void Postfix(IRunState runState, AbstractRoom room)
+    {
+        try { CheckpointManager.Save(runState.TotalFloor); }
+        catch (Exception ex) { MainFile.Logger.Info($"[Checkpoint] FloorCheckpoint error: {ex.Message}"); }
     }
 }
