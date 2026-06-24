@@ -3,8 +3,7 @@ using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
-using ModTemplate.ModTemplateCode.Nodes;
-using ModTemplate.ModTemplateCode.Snapshots;
+using ModTemplate.ModTemplateCode.Checkpoints;
 
 namespace ModTemplate.ModTemplateCode.Patches;
 
@@ -15,8 +14,8 @@ static class RunStartPatch
     [HarmonyPostfix]
     static void Postfix()
     {
-        try { SnapshotManager.OnRunStart(); }
-        catch (Exception ex) { MainFile.Logger.Info($"[Snapshot] RunStart error: {ex.Message}"); }
+        try { CheckpointManager.OnRunStart(); }
+        catch (Exception ex) { MainFile.Logger.Info($"[Checkpoint] RunStart error: {ex.Message}"); }
     }
 }
 
@@ -27,23 +26,20 @@ static class RunContinuePatch
     [HarmonyPostfix]
     static void Postfix()
     {
-        try { SnapshotManager.OnRunContinue(); }
-        catch (Exception ex) { MainFile.Logger.Info($"[Snapshot] RunContinue error: {ex.Message}"); }
+        try { CheckpointManager.OnRunContinue(); }
+        catch (Exception ex) { MainFile.Logger.Info($"[Checkpoint] RunContinue error: {ex.Message}"); }
     }
 }
 
-
-// Auto-save a snapshot at the start of every floor.
+// Auto-save a checkpoint at the start of every floor.
 // Hook.BeforeRoomEntered is the game's canonical hook point fired before any room logic runs.
 [HarmonyPatch(typeof(Hook), nameof(Hook.BeforeRoomEntered))]
-static class FloorSnapshotPatch
+static class FloorCheckpointPatch
 {
     [HarmonyPostfix]
     static void Postfix(IRunState runState, AbstractRoom room)
     {
-        try { SnapshotPatch.SaveSnapshot(runState.TotalFloor); }
-        catch (Exception ex) { MainFile.Logger.Info($"[Snapshot] FloorSnapshot error: {ex.Message}"); }
+        try { CheckpointManager.Save(runState.TotalFloor); }
+        catch (Exception ex) { MainFile.Logger.Info($"[Checkpoint] FloorCheckpoint error: {ex.Message}"); }
     }
 }
-
-

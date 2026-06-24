@@ -4,32 +4,32 @@ using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 
-namespace ModTemplate.ModTemplateCode.Snapshots;
+namespace ModTemplate.ModTemplateCode.Checkpoints;
 
-public static class SnapshotManager
+public static class CheckpointManager
 {
-    public static int SnapshotCount => _snapshots.Count;
+    public static int CheckpointCount => _checkpoints.Count;
 
     // Floor → (complete run state at that floor, time it was captured)
-    private static readonly Dictionary<int, (SerializableRun RunSave, DateTime SavedAt)> _snapshots = new();
+    private static readonly Dictionary<int, (SerializableRun RunSave, DateTime SavedAt)> _checkpoints = new();
 
-    private static string SnapshotRoot => Path.Combine(OS.GetUserDataDir(), "mod_snapshots");
-    private static string ActiveDir    => Path.Combine(SnapshotRoot, "active");
+    private static string CheckpointRoot => Path.Combine(OS.GetUserDataDir(), "mod_checkpoints");
+    private static string ActiveDir      => Path.Combine(CheckpointRoot, "active");
 
     // ── Run lifecycle ─────────────────────────────────────────────────────────
 
     public static void OnRunStart()
     {
-        _snapshots.Clear();
+        _checkpoints.Clear();
         if (Directory.Exists(ActiveDir))
             Directory.Delete(ActiveDir, recursive: true);
         Directory.CreateDirectory(ActiveDir);
-        MainFile.Logger.Info("[Snapshot] New run started.");
+        MainFile.Logger.Info("[Checkpoint] New run started.");
     }
 
     public static void OnRunContinue()
     {
-        _snapshots.Clear();
+        _checkpoints.Clear();
         if (Directory.Exists(ActiveDir))
         {
             foreach (var dir in Directory.GetDirectories(ActiveDir))
@@ -37,14 +37,14 @@ public static class SnapshotManager
                 var name = Path.GetFileName(dir);
                 if (!name.StartsWith("floor_") || !int.TryParse(name[6..], out var floor)) continue;
 
-                var snapshotFile = Path.Combine(dir, "snapshot.json");
-                var metaFile     = Path.Combine(dir, "meta.json");
-                if (!File.Exists(snapshotFile)) continue;
+                var checkpointFile = Path.Combine(dir, "checkpoint.json");
+                var metaFile       = Path.Combine(dir, "meta.json");
+                if (!File.Exists(checkpointFile)) continue;
 
                 try
                 {
                     var result = JsonSerializationUtility.FromJson<SerializableRun>(
-                        File.ReadAllText(snapshotFile));
+                        File.ReadAllText(checkpointFile));
                     if (!result.Success || result.SaveData == null) continue;
                     var runSave = result.SaveData;
 
@@ -52,25 +52,25 @@ public static class SnapshotManager
                         ? DateTime.Parse(File.ReadAllText(metaFile), null, System.Globalization.DateTimeStyles.RoundtripKind)
                         : Directory.GetCreationTimeUtc(dir);
 
-                    _snapshots[floor] = (runSave, savedAt);
-                    MainFile.Logger.Info($"[Snapshot] Restored floor {floor} from disk.");
+                    _checkpoints[floor] = (runSave, savedAt);
+                    MainFile.Logger.Info($"[Checkpoint] Restored floor {floor} from disk.");
                 }
                 catch (Exception ex)
                 {
-                    MainFile.Logger.Info($"[Snapshot] Could not restore floor {floor}: {ex.Message}");
+                    MainFile.Logger.Info($"[Checkpoint] Could not restore floor {floor}: {ex.Message}");
                 }
             }
         }
-        MainFile.Logger.Info($"[Snapshot] Continued run | {_snapshots.Count} snapshot(s).");
+        MainFile.Logger.Info($"[Checkpoint] Continued run | {_checkpoints.Count} checkpoint(s).");
     }
 
     public static void OnRunEnd()
     {
-        _snapshots.Clear();
+        _checkpoints.Clear();
         if (Directory.Exists(ActiveDir))
         {
             Directory.Delete(ActiveDir, recursive: true);
-            MainFile.Logger.Info("[Snapshot] Run ended, snapshots cleared.");
+            MainFile.Logger.Info("[Checkpoint] Run ended, checkpoints cleared.");
         }
     }
 
@@ -94,52 +94,52 @@ public static class SnapshotManager
             var readResult = saveManager.LoadRunSave();
             if (!readResult.Success || readResult.SaveData == null)
             {
-                MainFile.Logger.Info($"[Snapshot] Save floor {floor}: LoadRunSave failed (status={readResult.Status}).");
+                MainFile.Logger.Info($"[Checkpoint] Save floor {floor}: LoadRunSave failed (status={readResult.Status}).");
                 return;
             }
 
             var runSave = readResult.SaveData;
-            bool isNew  = !_snapshots.ContainsKey(floor);
+            bool isNew  = !_checkpoints.ContainsKey(floor);
             var savedAt = DateTime.UtcNow;
-            _snapshots[floor] = (runSave, savedAt);
+            _checkpoints[floor] = (runSave, savedAt);
 
-            // Persist to disk so snapshots survive game restarts.
+            // Persist to disk so checkpoints survive game restarts.
             var dir = Path.Combine(ActiveDir, $"floor_{floor:D2}");
             Directory.CreateDirectory(dir);
-            File.WriteAllText(Path.Combine(dir, "snapshot.json"),
+            File.WriteAllText(Path.Combine(dir, "checkpoint.json"),
                 JsonSerializationUtility.ToJson(runSave));
             File.WriteAllText(Path.Combine(dir, "meta.json"),
                 savedAt.ToString("O")); // ISO 8601 round-trip format
 
-            MainFile.Logger.Info($"[Snapshot] {(isNew ? "Saved" : "Overwrote")} floor {floor} ({_snapshots.Count} total).");
+            MainFile.Logger.Info($"[Checkpoint] {(isNew ? "Saved" : "Overwrote")} floor {floor} ({_checkpoints.Count} total).");
         }
         catch (Exception ex)
         {
-            MainFile.Logger.Info($"[Snapshot] SaveAsync error: {ex}");
+            MainFile.Logger.Info($"[Checkpoint] SaveAsync error: {ex}");
         }
     }
 
     // ── Enumerate ─────────────────────────────────────────────────────────────
 
-    public static List<RunSnapshot> LoadAll() =>
-        [.. _snapshots
-            .Select(kvp => new RunSnapshot { Floor = kvp.Key, SavedAt = kvp.Value.SavedAt })
+    public static List<RunCheckpoint> LoadAll() =>
+        [.. _checkpoints
+            .Select(kvp => new RunCheckpoint { Floor = kvp.Key, SavedAt = kvp.Value.SavedAt })
             .OrderByDescending(s => s.Floor)];
 
     // ── Load ──────────────────────────────────────────────────────────────────
 
-    public static void LoadSnapshot(RunSnapshot snapshot)
+    public static void LoadCheckpoint(RunCheckpoint checkpoint)
     {
-        if (!_snapshots.TryGetValue(snapshot.Floor, out var entry))
+        if (!_checkpoints.TryGetValue(checkpoint.Floor, out var entry))
         {
-            MainFile.Logger.Info($"[Snapshot] Load floor {snapshot.Floor}: not found in memory.");
+            MainFile.Logger.Info($"[Checkpoint] Load floor {checkpoint.Floor}: not found in memory.");
             return;
         }
-        MainFile.Logger.Info($"[Snapshot] Starting load for floor {snapshot.Floor}.");
-        _ = LoadSnapshotAsync(snapshot.Floor, entry.RunSave);
+        MainFile.Logger.Info($"[Checkpoint] Starting load for floor {checkpoint.Floor}.");
+        _ = LoadCheckpointAsync(checkpoint.Floor, entry.RunSave);
     }
 
-    private static async Task LoadSnapshotAsync(int floor, SerializableRun runSave)
+    private static async Task LoadCheckpointAsync(int floor, SerializableRun runSave)
     {
         try
         {
@@ -151,7 +151,7 @@ public static class SnapshotManager
             var pending = saveManager.CurrentRunSaveTask;
             if (pending != null)
             {
-                MainFile.Logger.Info("[Snapshot] LoadAsync: waiting for pending save...");
+                MainFile.Logger.Info("[Checkpoint] LoadAsync: waiting for pending save...");
                 await pending;
             }
 
@@ -176,17 +176,17 @@ public static class SnapshotManager
             }
             else
             {
-                MainFile.Logger.Info("[Snapshot] LoadAsync: SetUpSavedSingleplayer not found.");
+                MainFile.Logger.Info("[Checkpoint] LoadAsync: SetUpSavedSingleplayer not found.");
             }
 
             await game.LoadRun(runState, runSave.PreFinishedRoom);
             await game.Transition.FadeIn();
 
-            MainFile.Logger.Info($"[Snapshot] Load complete for floor {floor}.");
+            MainFile.Logger.Info($"[Checkpoint] Load complete for floor {floor}.");
         }
         catch (Exception ex)
         {
-            MainFile.Logger.Info($"[Snapshot] LoadAsync error: {ex}");
+            MainFile.Logger.Info($"[Checkpoint] LoadAsync error: {ex}");
         }
     }
 }

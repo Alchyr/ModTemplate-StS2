@@ -1,5 +1,5 @@
 using Godot;
-using ModTemplate.ModTemplateCode.Snapshots;
+using ModTemplate.ModTemplateCode.Checkpoints;
 
 namespace ModTemplate.ModTemplateCode.Nodes;
 
@@ -9,7 +9,7 @@ namespace ModTemplate.ModTemplateCode.Nodes;
 // throws ArgumentException. Using a static class with built-in Godot nodes
 // (CanvasLayer, Label, etc.) avoids this entirely.
 // Input polling and HUD updates are driven by a Harmony patch on NRun._Process.
-internal static class SnapshotUi
+internal static class CheckpointUi
 {
     private static Label?         _hudLabel;
     private static Control?       _panel;
@@ -21,12 +21,12 @@ internal static class SnapshotUi
     // Called from NRunReadyPatch — builds the UI once per run scene.
     public static void Initialize(Node sceneRoot)
     {
-        if (sceneRoot.HasNode("SnapshotUiLayer")) return;
+        if (sceneRoot.HasNode("CheckpointUiLayer")) return;
 
-        var layer = new CanvasLayer { Layer = 128, Name = "SnapshotUiLayer" };
+        var layer = new CanvasLayer { Layer = 128, Name = "CheckpointUiLayer" };
         sceneRoot.AddChild(layer);
         BuildLayout(layer);
-        MainFile.Logger.Info("[Snapshot] SnapshotUi initialized.");
+        MainFile.Logger.Info("[Checkpoint] CheckpointUi initialized.");
     }
 
     // Called from RunEndPatch — clears stale references when the run ends.
@@ -43,9 +43,9 @@ internal static class SnapshotUi
     {
         if (_hudLabel == null) return;
 
-        _hudLabel.Text = SnapshotManager.SnapshotCount > 0
-            ? $"[Snapshots: {SnapshotManager.SnapshotCount}]  hold L"
-            : "[Snapshot Mod]  hold L";
+        _hudLabel.Text = CheckpointManager.CheckpointCount > 0
+            ? $"[Checkpoints: {CheckpointManager.CheckpointCount}]  hold L"
+            : "[Checkpoint]  hold L";
 
         if (Input.IsKeyPressed(Key.L))
         {
@@ -128,7 +128,7 @@ internal static class SnapshotUi
         outer.AddChild(header);
         header.AddChild(new Label
         {
-            Text                = "Snapshot History  (hold L or Esc to close)",
+            Text                = "Checkpoint History  (hold L or Esc to close)",
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
         });
         var closeBtn = new Button { Text = "X" };
@@ -174,27 +174,27 @@ internal static class SnapshotUi
         if (_list == null) return;
         foreach (var child in _list.GetChildren()) child.QueueFree();
 
-        var snapshots = SnapshotManager.LoadAll().OrderByDescending(s => s.Floor).ToList();
+        var checkpoints = CheckpointManager.LoadAll();
 
-        if (snapshots.Count == 0)
+        if (checkpoints.Count == 0)
         {
-            _list.AddChild(new Label { Text = "No snapshots yet." });
+            _list.AddChild(new Label { Text = "No checkpoints yet." });
             return;
         }
 
-        foreach (var snap in snapshots)
+        foreach (var cp in checkpoints)
         {
             var row = new HBoxContainer();
             _list.AddChild(row);
-            row.AddChild(new Label { Text = $"Floor {snap.Floor,2}",                           CustomMinimumSize = new Vector2(80,  0) });
-            row.AddChild(new Label { Text = snap.SavedAt.ToLocalTime().ToString("HH:mm:ss"),   CustomMinimumSize = new Vector2(180, 0) });
+            row.AddChild(new Label { Text = $"Floor {cp.Floor,2}",                         CustomMinimumSize = new Vector2(80,  0) });
+            row.AddChild(new Label { Text = cp.SavedAt.ToLocalTime().ToString("HH:mm:ss"), CustomMinimumSize = new Vector2(180, 0) });
             row.AddChild(new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill });
 
-            var btn = new Button { Text = "Load Snapshot" };
-            var captured = snap;
+            var btn = new Button { Text = "Load Checkpoint" };
+            var captured = cp;
             btn.Pressed += () =>
             {
-                SnapshotManager.LoadSnapshot(captured);
+                CheckpointManager.LoadCheckpoint(captured);
                 if (_panel != null) _panel.Visible = false;
             };
             row.AddChild(btn);
