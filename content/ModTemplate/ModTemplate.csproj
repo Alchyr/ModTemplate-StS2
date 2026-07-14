@@ -18,11 +18,11 @@
 
     <ItemGroup >
         <Reference Include="0Harmony">
-            <HintPath>../.dll-latest/0Harmony.dll</HintPath>
+            <HintPath>lib/0Harmony.dll</HintPath>
             <Private>false</Private>
         </Reference>
         <Reference Include="sts2">
-            <HintPath>../.dll-latest/sts2.dll</HintPath>
+            <HintPath>lib/sts2.dll</HintPath>
             <Private>false</Private>
         </Reference>
     </ItemGroup>
