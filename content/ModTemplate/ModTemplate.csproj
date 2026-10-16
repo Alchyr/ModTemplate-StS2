@@ -36,10 +36,10 @@
 
     <ItemGroup>
         <PackageReference Include="Alchyr.Sts2.BaseLib" Version="*" PrivateAssets="All"/>
-        <PackageReference Include="Alchyr.Sts2.ModAnalyzers" Version="*" />
+        <!-- <PackageReference Include="Alchyr.Sts2.ModAnalyzers" Version="*" /> Some checks regarding models and localization. Uncomment to enable. -->
         <!-- Generates a .pck file when building if only using simple assets. May not work on all setups. Uncomment to test. -->
         <!-- <PackageReference Include="BSchneppe.StS2.PckPacker" Version="0.1.1" PrivateAssets="All" /> -->
-        <AdditionalFiles Include="ModTemplate/localization/**/*.json"/> <!-- Used by analyzer -->
+        <AdditionalFiles Include="ModTemplate/localization/**/*.json"/> <!-- Used by analyzer, if it's enabled -->
     </ItemGroup>
 
     <ItemGroup>
