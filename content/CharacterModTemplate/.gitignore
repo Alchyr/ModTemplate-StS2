@@ -1,12 +1,21 @@
+# Godot 4+
 .godot/
-bin/
-/android/
+.nomedia
 
-.idea/
-.vs/
-publish/
+
+# godot-spine extension
+bin/
+
+# C# project cache files
 Properties/
 packages/
-.editorconfig
-*.user
+
+# C# project local settins
 Directory.Build.props
+
+# Visual Studio
+.vs/
+
+# Rider
+.idea/
+*.sln.DotSettings.user
