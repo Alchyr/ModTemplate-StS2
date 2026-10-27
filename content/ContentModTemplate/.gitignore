@@ -1,7 +1,7 @@
 .godot/
 bin/
 /android/
-.git/
+
 .idea/
 .vs/
 publish/
