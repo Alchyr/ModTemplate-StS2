@@ -1,0 +1,7 @@
+root = true
+
+[*.cs]
+
+# Don't suggest removing or adding `this.` to fields/properties/methods
+dotnet_diagnostic.IDE0009.severity = none
+dotnet_diagnostic.IDE0003.severity = none
